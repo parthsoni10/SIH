@@ -1,0 +1,27 @@
+# Environment & Secrets
+.env
+*.env
+backend/.env
+
+# Node.js dependencies & builds
+node_modules/
+Frontend/node_modules/
+dist/
+Frontend/dist/
+
+# Python cache & databases
+__pycache__/
+*.pyc
+.pytest_cache/
+*.db
+backend/screening.db
+
+# User uploads & temp directories
+uploads/
+backend/uploads/
+
+# IDE & System files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
