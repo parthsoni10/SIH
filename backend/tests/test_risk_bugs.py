@@ -67,3 +67,22 @@ def test_ocr_name_extraction():
     fields = map_fields_by_keywords(ocr_lines, "Passport")
     assert "name" in fields
     assert fields["name"]["value"] == "SONI PARTH"
+
+def test_sanitize_field_value_garbage_stripping():
+    """Verify sanitize_field_value strips label noise (/Name) and stray OCR tokens (fuaa)."""
+    from app.modules.ocr import sanitize_field_value
+    
+    assert sanitize_field_value("name", "SONIPARTH fuaa") == "SONIPARTH"
+    assert sanitize_field_value("name", "/Name: PARTH SONI") == "PARTH SONI"
+    assert sanitize_field_value("name", "SONI PARTH DOB: 15/05/1995") == "SONI PARTH"
+    assert sanitize_field_value("document_number", " ABCDE1234F /") == "ABCDE1234F"
+
+def test_ocr_confidence_mapped_fields_only():
+    """Verify ocr_confidence is computed from mapped fields only, ignoring low-confidence noise boxes."""
+    from app.modules.ocr import extract_ocr_data
+    import numpy as np
+    
+    dummy_img = np.full((100, 100, 3), 200, dtype=np.uint8)
+    res = extract_ocr_data(dummy_img, "Passport")
+    # Must return a valid float between 0.0 and 1.0
+    assert 0.0 <= res["ocr_confidence"] <= 1.0

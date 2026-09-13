@@ -191,6 +191,14 @@ async def verify_document(
         "raw_llm_response": unified_llm_result.get("raw_llm_response", "")
     }
 
+    # Re-calculate ocr_confidence based on mapped fields post-LLM merge
+    mapped_confs = [
+        f["confidence"] for f in ocr_result["fields"].values()
+        if isinstance(f, dict) and "confidence" in f and f["confidence"] > 0.0
+    ]
+    if mapped_confs:
+        ocr_result["ocr_confidence"] = round(float(np.mean(mapped_confs)), 4)
+
     # Re-validate missing name if LLM supplied holder name after Module 4
     if "missing_name" in validation_result["failed_rules"]:
         name_ok, _, _ = rule_name_present(ocr_result["fields"], document_type, ocr_result)
@@ -200,7 +208,7 @@ async def verify_document(
             rules_passed = rules_total - len(validation_result["failed_rules"])
             validation_result["validation_pass_rate"] = round(rules_passed / float(rules_total), 4)
 
-            # Re-predict risk with updated pass rate
+            # Re-predict risk with updated pass rate & ocr confidence
             risk_result = predict_risk(
                 ocr_confidence=ocr_result["ocr_confidence"],
                 validation_pass_rate=validation_result["validation_pass_rate"],
@@ -214,6 +222,7 @@ async def verify_document(
             logger.info(
                 f"[Pipeline] Post-LLM re-validation: name found! "
                 f"Updated pass_rate to {validation_result['validation_pass_rate']}, "
+                f"ocr_confidence to {ocr_result['ocr_confidence']}, "
                 f"risk_score to {risk_result['risk_score']}"
             )
 
