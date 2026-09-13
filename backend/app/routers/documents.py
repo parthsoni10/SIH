@@ -3,6 +3,7 @@ import io
 import time
 import asyncio
 import logging
+import numpy as np
 from typing import Optional
 from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -197,7 +198,7 @@ async def verify_document(
         if isinstance(f, dict) and "confidence" in f and f["confidence"] > 0.0
     ]
     if mapped_confs:
-        ocr_result["ocr_confidence"] = round(float(np.mean(mapped_confs)), 4)
+        ocr_result["ocr_confidence"] = round(float(sum(mapped_confs) / len(mapped_confs)), 4)
 
     # Re-validate missing name if LLM supplied holder name after Module 4
     if "missing_name" in validation_result["failed_rules"]:
