@@ -24,7 +24,8 @@ class Settings:
     PROJECT_NAME: str = os.getenv("PROJECT_NAME", "AI-Based Fake Identity & Document Screening System")
     RISK_MODEL_PATH: Path = resolve_path(os.getenv("RISK_MODEL_PATH", ""), BASE_DIR / "app" / "models" / "risk_model.pkl")
     UPLOAD_DIR: Path = resolve_path(os.getenv("UPLOAD_DIR", ""), BASE_DIR / "uploads")
-    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", os.getenv("GOOGLE_API_KEY", os.getenv("MISTRAL_API_KEY", "")))
+    MISTRAL_API_KEY: str = os.getenv("MISTRAL_API_KEY", "")
     MAX_IMAGE_EDGE: int = int(os.getenv("MAX_IMAGE_EDGE", "2000"))
     DATABASE_URL: str = os.getenv("DATABASE_URL", f"sqlite:///{BASE_DIR / 'screening.db'}")
 

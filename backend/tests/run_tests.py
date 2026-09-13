@@ -129,6 +129,24 @@ def run_all():
         print(f"[FAIL] Module 7: test_explain:\n{traceback.format_exc()}")
         failed += 1
 
+    # 8. Test Orchestration (Module 8)
+    try:
+        from tests.test_orchestration import (
+            test_verify_document_success,
+            test_verify_document_unsupported_type,
+            test_audit_trail_pagination_and_retrieval,
+            test_audit_trail_filtering
+        )
+        test_verify_document_success()
+        test_verify_document_unsupported_type()
+        test_audit_trail_pagination_and_retrieval()
+        test_audit_trail_filtering()
+        print("[PASS] Module 8: test_orchestration")
+        passed += 1
+    except Exception as e:
+        print(f"[FAIL] Module 8: test_orchestration:\n{traceback.format_exc()}")
+        failed += 1
+
     print("--------------------------------------------------")
     print(f" Summary: {passed} passed, {failed} failed.")
     print("--------------------------------------------------")

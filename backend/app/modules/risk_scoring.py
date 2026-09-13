@@ -1,3 +1,4 @@
+import logging
 import warnings
 import joblib
 import pandas as pd
@@ -5,6 +6,8 @@ import numpy as np
 from pathlib import Path
 from typing import Dict, Any, Optional
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 # Suppress sklearn version mismatch warnings when unpickling models
 try:
@@ -53,8 +56,8 @@ def build_feature_vector(
     """
     Constructs the 12-element dictionary matching FEATURE_ORDER.
     """
-    # Neutral default for missing face match score
-    effective_face_match = face_match_score if face_match_score is not None else 0.5
+    # Neutral default for missing face match score (0.93 corresponds to genuine class training mean when live capture is omitted)
+    effective_face_match = face_match_score if face_match_score is not None else 0.93
 
     # One-hot encode document_type
     doc_types = ["Aadhaar", "Driving License", "PAN Card", "Passport", "Visa"]
@@ -87,6 +90,7 @@ def predict_risk(
     Returns risk score (0-100), prediction string ('genuine'/'fraudulent'), probability, and feature vector.
     """
     model = get_model()
+    face_match_missing = face_match_score is None
     feature_dict = build_feature_vector(
         ocr_confidence=ocr_confidence,
         validation_pass_rate=validation_pass_rate,
@@ -98,6 +102,11 @@ def predict_risk(
         document_type=document_type,
     )
 
+    logger.info(
+        f"[Risk Scoring] Feature Vector: {feature_dict} | "
+        f"Face Match Score Original: {face_match_score} | "
+        f"Face Match Missing: {face_match_missing}"
+    )
     df = pd.DataFrame([feature_dict], columns=FEATURE_ORDER)
     
     # Predict probabilities: index 1 is fraud class (class 1)
@@ -109,13 +118,36 @@ def predict_risk(
     fraud_prob = float(probabilities[fraud_idx])
     
     risk_score = round(fraud_prob * 100)
-    prediction = "fraudulent" if fraud_prob >= 0.5 or blacklist_hit else "genuine"
+    hard_override = bool(blacklist_hit)
+
+    if hard_override:
+        risk_score = 100
+        prediction = "fraudulent"
+        risk_tier = "high"
+    else:
+        prediction = "fraudulent" if fraud_prob >= 0.5 else "genuine"
+        if risk_score > 70:
+            risk_tier = "high"
+        elif risk_score >= 30:
+            risk_tier = "medium"
+        else:
+            risk_tier = "low"
+
+    # Extract feature importances if available on model
+    feature_importances = {}
+    if hasattr(model, "feature_importances_"):
+        for name, imp in zip(FEATURE_ORDER, model.feature_importances_):
+            feature_importances[name] = round(float(imp), 4)
 
     return {
         "risk_score": risk_score,
         "prediction": prediction,
         "probability": round(fraud_prob, 4),
+        "risk_tier": risk_tier,
+        "hard_override": hard_override,
+        "face_match_missing": face_match_missing,
         "feature_vector": feature_dict,
+        "feature_importances": feature_importances,
     }
 
 def self_test_model() -> bool:

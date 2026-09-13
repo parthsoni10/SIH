@@ -1,0 +1,47 @@
+{
+  "tampering_cases": [
+    {
+      "path": "C:\\Users\\DELL\\Documents\\SIH\\backend\\benchmark_data\\genuine_passport_01.jpg",
+      "document_type": "Passport",
+      "ground_truth": "genuine"
+    },
+    {
+      "path": "C:\\Users\\DELL\\Documents\\SIH\\backend\\benchmark_data\\tampered_passport_01.jpg",
+      "document_type": "Passport",
+      "ground_truth": "tampered"
+    },
+    {
+      "path": "C:\\Users\\DELL\\Documents\\SIH\\backend\\benchmark_data\\genuine_whatsapp_1600x1200.jpg",
+      "document_type": "Passport",
+      "ground_truth": "genuine"
+    },
+    {
+      "path": "C:\\Users\\DELL\\Documents\\SIH\\backend\\benchmark_data\\tampered_photoshop.jpg",
+      "document_type": "Passport",
+      "ground_truth": "tampered"
+    }
+  ],
+  "ocr_cases": [
+    {
+      "path": "C:\\Users\\DELL\\Documents\\SIH\\backend\\benchmark_data\\genuine_passport_01.jpg",
+      "document_type": "Passport",
+      "expected_fields": {
+        "document_number": "Z1234567"
+      }
+    }
+  ],
+  "face_cases": [
+    {
+      "document_path": "C:\\Users\\DELL\\Documents\\SIH\\backend\\benchmark_data\\genuine_passport_01.jpg",
+      "live_path": "C:\\Users\\DELL\\Documents\\SIH\\backend\\benchmark_data\\live_capture_match.jpg",
+      "document_type": "Passport",
+      "ground_truth": "match"
+    },
+    {
+      "document_path": "C:\\Users\\DELL\\Documents\\SIH\\backend\\benchmark_data\\genuine_passport_01.jpg",
+      "live_path": "C:\\Users\\DELL\\Documents\\SIH\\backend\\benchmark_data\\live_capture_mismatch.jpg",
+      "document_type": "Passport",
+      "ground_truth": "mismatch"
+    }
+  ]
+}

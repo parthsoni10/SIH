@@ -4,6 +4,7 @@ import RiskScoreBadge from '../components/RiskScoreBadge';
 import ExplanationBanner from '../components/ExplanationBanner';
 import FieldTable from '../components/FieldTable';
 import ForensicCard from '../components/ForensicCard';
+import OcrExtractedView from '../components/OcrExtractedView';
 
 export default function ResultPage({ resultData, onBackToUpload }) {
   const [showVectorModal, setShowVectorModal] = useState(false);
@@ -49,7 +50,7 @@ export default function ResultPage({ resultData, onBackToUpload }) {
         </button>
       </div>
 
-      {/* Gemini AI Officer Summary Banner */}
+      {/* Mistral AI Officer Summary Banner */}
       <ExplanationBanner
         explanation={resultData.explanation}
         riskScore={resultData.risk_score}
@@ -81,6 +82,11 @@ export default function ResultPage({ resultData, onBackToUpload }) {
             </div>
 
             <div className="flex justify-between">
+              <span className="text-slate-400">Govt Layout Geometry:</span>
+              <span className="text-emerald-400 font-bold">{Math.round((resultData.layout_score ?? 1.0) * 100)}%</span>
+            </div>
+
+            <div className="flex justify-between">
               <span className="text-slate-400">Tampering Index:</span>
               <span className="text-slate-200 font-bold">{(resultData.tampering_score * 100).toFixed(1)}%</span>
             </div>
@@ -103,6 +109,14 @@ export default function ResultPage({ resultData, onBackToUpload }) {
             faceMatchScore={resultData.face_match_score}
             blacklistHit={resultData.blacklist_hit}
             failedRules={resultData.failed_rules}
+            layoutScore={resultData.layout_score}
+            layoutAnomalies={resultData.layout_anomalies}
+          />
+
+          <OcrExtractedView
+            rawText={resultData.raw_text}
+            llmValidation={resultData.llm_validation}
+            warnings={resultData.preprocessing_warnings}
           />
 
           <FieldTable fields={resultData.extracted_fields} />

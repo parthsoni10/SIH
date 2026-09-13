@@ -1,0 +1,32 @@
+{
+  "tampering_detection": {
+    "precision": 1.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "roc_auc": 1.0,
+    "confusion_matrix": [
+      [
+        2,
+        0
+      ],
+      [
+        2,
+        0
+      ]
+    ],
+    "samples_evaluated": 4
+  },
+  "ocr_field_extraction": {
+    "field_accuracy": 1.0,
+    "fields_checked": 1,
+    "correct_fields": 1
+  },
+  "face_verification": {
+    "face_match_accuracy": 0.5,
+    "pairs_evaluated": 2,
+    "correct_pairs": 1,
+    "detector_usage_breakdown": {
+      "none": 2
+    }
+  }
+}

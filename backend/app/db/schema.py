@@ -24,6 +24,7 @@ class AuditLog(Base):
     expiry_valid = Column(Boolean, nullable=False)
     tampering_score = Column(Float, nullable=False)
     face_match_score = Column(Float, nullable=True)
+    face_match_missing = Column(Boolean, nullable=True)
     blacklist_hit = Column(Boolean, nullable=False)
 
     # Rich JSON details
@@ -31,3 +32,9 @@ class AuditLog(Base):
     failed_rules = Column(JSON, nullable=True)
     tampering_signals = Column(JSON, nullable=True)
     feature_vector = Column(JSON, nullable=True)
+    raw_text = Column(JSON, nullable=True)
+    llm_validation = Column(JSON, nullable=True)
+    preprocessing_warnings = Column(JSON, nullable=True)
+    tampering_flags = Column(JSON, nullable=True)
+    layout_score = Column(Float, nullable=True)
+    layout_anomalies = Column(JSON, nullable=True)

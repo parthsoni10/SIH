@@ -1,4 +1,4 @@
-from app.modules.explain import generate_officer_explanation, generate_template_explanation
+from app.modules.explain import generate_template_explanation
 
 def test_template_explanation_fraudulent():
     exp = generate_template_explanation(

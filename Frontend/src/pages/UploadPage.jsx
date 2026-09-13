@@ -58,7 +58,18 @@ export default function UploadPage({ onVerificationComplete }) {
     } catch (err) {
       clearInterval(interval);
       setIsProcessing(false);
-      setErrorMsg(err.response?.data?.detail || err.message || 'Verification request failed.');
+      
+      let errorMessage;
+      if (err.code === 'ECONNABORTED') {
+        errorMessage = 'Request timed out — the server took too long to respond. Please try again.';
+      } else if (err.response?.data?.detail) {
+        errorMessage = err.response.data.detail;
+      } else if (err.message) {
+        errorMessage = err.message;
+      } else {
+        errorMessage = 'Verification request failed. Please check that the backend server is running.';
+      }
+      setErrorMsg(errorMessage);
     }
   };
 

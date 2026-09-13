@@ -10,13 +10,14 @@ export default function AuditTrailPage() {
   const [loading, setLoading] = useState(false);
   const [filterDocType, setFilterDocType] = useState('');
   const [filterPrediction, setFilterPrediction] = useState('');
+  const [filterRiskTier, setFilterRiskTier] = useState('');
   
   const [selectedRecord, setSelectedRecord] = useState(null);
 
   const loadTrail = async () => {
     setLoading(true);
     try {
-      const data = await fetchAuditTrail(page, 10, filterDocType || null, filterPrediction || null);
+      const data = await fetchAuditTrail(page, 10, filterDocType || null, filterPrediction || null, filterRiskTier || null);
       setLogs(data.items || []);
       setTotal(data.total || 0);
     } catch (err) {
@@ -28,7 +29,7 @@ export default function AuditTrailPage() {
 
   useEffect(() => {
     loadTrail();
-  }, [page, filterDocType, filterPrediction]);
+  }, [page, filterDocType, filterPrediction, filterRiskTier]);
 
   if (selectedRecord) {
     return (
@@ -94,6 +95,18 @@ export default function AuditTrailPage() {
             <option value="">All Predictions</option>
             <option value="genuine">Genuine Only</option>
             <option value="fraudulent">Fraudulent Only</option>
+          </select>
+
+          {/* Filter Risk Tier */}
+          <select
+            value={filterRiskTier}
+            onChange={(e) => { setFilterRiskTier(e.target.value); setPage(1); }}
+            className="bg-slate-900 border border-slate-800 text-slate-300 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-cyan-500"
+          >
+            <option value="">All Risk Tiers</option>
+            <option value="high">High Risk (&gt;70)</option>
+            <option value="medium">Medium Risk (30-70)</option>
+            <option value="low">Low Risk (&lt;30)</option>
           </select>
         </div>
       </div>

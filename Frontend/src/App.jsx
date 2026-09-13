@@ -43,7 +43,7 @@ export default function App() {
       <footer className="border-t border-slate-800/80 py-4 px-6 text-center text-xs font-mono text-slate-500 bg-slate-950">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-2">
           <span>SENTINEL AI Border Screening & Identity Security System</span>
-          <span>FastAPI + PaddleOCR + DeepFace + Gemini AI + RandomForest</span>
+          <span>FastAPI + PaddleOCR + DeepFace + Mistral AI + RandomForest</span>
         </div>
       </footer>
     </div>

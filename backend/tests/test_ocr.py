@@ -23,10 +23,15 @@ def test_pan_number_regex():
     assert validate_pan_number("ABCDE1234F") is True
     assert validate_pan_number("INVALID123") is False
 
+
+
 def test_extract_ocr_data_dummy_image():
+    """Tests local OCR extraction on a dummy image (no LLM calls)."""
     dummy_img = np.zeros((100, 300, 3), dtype=np.uint8)
     res = extract_ocr_data(dummy_img, document_type="PAN Card")
     
     assert "fields" in res
     assert "ocr_confidence" in res
     assert "id_checksum_valid" in res
+    assert "raw_text" in res
+    assert "llm_validation" in res

@@ -15,6 +15,7 @@ def get_audit_trail(
     limit: int = Query(10, ge=1, le=100),
     document_type: Optional[str] = Query(None),
     prediction: Optional[str] = Query(None),
+    risk_tier: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
     """
@@ -26,6 +27,13 @@ def get_audit_trail(
         query = query.filter(AuditLog.document_type == document_type)
     if prediction:
         query = query.filter(AuditLog.prediction == prediction)
+    if risk_tier:
+        if risk_tier == "high":
+            query = query.filter(AuditLog.risk_score > 70)
+        elif risk_tier == "medium":
+            query = query.filter(AuditLog.risk_score >= 30, AuditLog.risk_score <= 70)
+        elif risk_tier == "low":
+            query = query.filter(AuditLog.risk_score < 30)
 
     total = query.count()
     items = query.order_by(desc(AuditLog.created_at)).offset((page - 1) * limit).limit(limit).all()

@@ -13,5 +13,5 @@ def test_detect_tampering_structure():
     assert "noise_inconsistency" in res["signals"]
 
 def test_metadata_editing_software():
-    score = compute_metadata_score({"Software": "Adobe Photoshop CS6"}, b"dummy")
+    score, reason = compute_metadata_score({"Software": "Adobe Photoshop CS6"}, b"dummy")
     assert score >= 0.70

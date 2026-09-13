@@ -15,14 +15,16 @@ export const verifyDocument = async (documentFile, liveCaptureBlob, documentType
     headers: {
       'Content-Type': 'multipart/form-data',
     },
+    timeout: 60000, // 60-second timeout to prevent indefinite hanging
   });
   return response.data;
 };
 
-export const fetchAuditTrail = async (page = 1, limit = 10, documentType = null, prediction = null) => {
+export const fetchAuditTrail = async (page = 1, limit = 10, documentType = null, prediction = null, riskTier = null) => {
   const params = { page, limit };
   if (documentType) params.document_type = documentType;
   if (prediction) params.prediction = prediction;
+  if (riskTier) params.risk_tier = riskTier;
 
   const response = await axios.get(`${API_BASE}/audit`, { params });
   return response.data;
