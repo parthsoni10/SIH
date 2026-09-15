@@ -13,7 +13,7 @@ class AuditLog(Base):
     
     # Model & Risk outputs
     risk_score = Column(Integer, nullable=False, index=True)
-    prediction = Column(String(20), nullable=False, index=True) # genuine / fraudulent
+    prediction = Column(String(50), nullable=False, index=True)  # GENUINE, AI_GENERATED, ALTERED, etc.
     probability = Column(Float, nullable=False)
     explanation = Column(Text, nullable=True)
 
@@ -36,5 +36,33 @@ class AuditLog(Base):
     llm_validation = Column(JSON, nullable=True)
     preprocessing_warnings = Column(JSON, nullable=True)
     tampering_flags = Column(JSON, nullable=True)
+    synthetic_generation_score = Column(Float, nullable=True)
+    synthetic_reasons = Column(JSON, nullable=True)
     layout_score = Column(Float, nullable=True)
     layout_anomalies = Column(JSON, nullable=True)
+
+    # Extended V2 Target Architecture Audit Fields
+    ai_probability = Column(Float, nullable=True)
+    ai_model_version = Column(String(50), nullable=True)
+    frequency_score = Column(Float, nullable=True)
+    synthetic_noise_score = Column(Float, nullable=True)
+    synthetic_confidence = Column(Float, nullable=True)
+    strong_signal_count = Column(Integer, nullable=True)
+    synthetic_status = Column(String(50), nullable=True)
+    decision_reason_codes = Column(JSON, nullable=True)
+    synthetic_analysis = Column(JSON, nullable=True)
+
+    decision_status = Column(String(50), nullable=True)
+    decision_confidence = Column(Float, nullable=True)
+    document_validity_score = Column(Float, nullable=True)
+    ai_generation_probability = Column(Float, nullable=True)
+    tampering_probability = Column(Float, nullable=True)
+    frequency_anomaly = Column(Float, nullable=True)
+    noise_anomaly = Column(Float, nullable=True)
+    patch_ai_probability = Column(Float, nullable=True)
+    corroborated = Column(Boolean, nullable=True)
+    quality_score = Column(Float, nullable=True)
+    gemini_summary = Column(Text, nullable=True)
+    reason_codes = Column(JSON, nullable=True)
+    model_versions = Column(JSON, nullable=True)
+    full_forensic_json = Column(JSON, nullable=True)

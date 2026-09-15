@@ -2,10 +2,14 @@ import axios from 'axios';
 
 const API_BASE = '/api';
 
-export const verifyDocument = async (documentFile, liveCaptureBlob, documentType) => {
+export const verifyDocument = async (documentFile, backSideFile, liveCaptureBlob, documentType) => {
   const formData = new FormData();
   formData.append('document_file', documentFile);
   formData.append('document_type', documentType);
+
+  if (backSideFile) {
+    formData.append('document_back_file', backSideFile);
+  }
 
   if (liveCaptureBlob) {
     formData.append('live_capture_file', liveCaptureBlob, 'live_capture.jpg');
@@ -15,7 +19,7 @@ export const verifyDocument = async (documentFile, liveCaptureBlob, documentType
     headers: {
       'Content-Type': 'multipart/form-data',
     },
-    timeout: 60000, // 60-second timeout to prevent indefinite hanging
+    timeout: 120000, // 120-second timeout — processing two images may take longer
   });
   return response.data;
 };

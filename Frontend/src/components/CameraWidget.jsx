@@ -14,10 +14,12 @@ export default function CameraWidget({ onCapture, capturedBlob, setCapturedBlob 
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }
       });
+      // videoRef is always in the DOM now, so this will always succeed
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play();
-        setStreamActive(true);
+        // Don't call setStreamActive here — the onPlaying event handles it
+        // This avoids the race condition where videoRef was null
+        videoRef.current.play().catch(() => {});
       }
     } catch (err) {
       setCameraError('Camera access denied or unavailable.');
@@ -87,7 +89,19 @@ export default function CameraWidget({ onCapture, capturedBlob, setCapturedBlob 
         {/* Hidden Canvas */}
         <canvas ref={canvasRef} className="hidden" />
 
-        {/* Snapshot Preview */}
+        {/* Video element is ALWAYS in the DOM so videoRef is never null */}
+        <video
+          ref={videoRef}
+          className={`w-full h-full object-cover transform -scale-x-100 ${
+            streamActive && !previewUrl ? '' : 'hidden'
+          }`}
+          muted
+          playsInline
+          autoPlay
+          onPlaying={() => setStreamActive(true)}
+        />
+
+        {/* Snapshot Preview — overlays the video */}
         {previewUrl ? (
           <div className="relative w-full h-full">
             <img src={previewUrl} alt="Live face snapshot" className="w-full h-full object-cover" />
@@ -96,11 +110,8 @@ export default function CameraWidget({ onCapture, capturedBlob, setCapturedBlob 
               <span>Face Captured</span>
             </div>
           </div>
-        ) : streamActive ? (
-          /* Live Stream */
-          <video ref={videoRef} className="w-full h-full object-cover transform -scale-x-100" muted playsInline />
-        ) : (
-          /* Camera Disabled / Error */
+        ) : !streamActive ? (
+          /* Camera Disabled / Error — shown when stream is not active */
           <div className="flex flex-col items-center justify-center p-6 text-center text-slate-500">
             <VideoOff className="w-10 h-10 mb-2 opacity-50 text-slate-400" />
             <p className="text-xs">{cameraError || 'Camera stream offline'}</p>
@@ -112,7 +123,7 @@ export default function CameraWidget({ onCapture, capturedBlob, setCapturedBlob 
               Start Camera
             </button>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Control Buttons */}

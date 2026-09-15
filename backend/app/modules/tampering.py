@@ -172,3 +172,21 @@ def detect_tampering(
         "ela_cutoff": ela_cutoff,
         "flags": flags
     }
+
+def analyze_error_level_analysis(original_bytes: bytes, image_bgr: np.ndarray) -> Dict[str, Any]:
+    score = compute_ela_score(image_bgr, original_bytes=original_bytes)
+    flags = []
+    if score > 0.40:
+        flags.append(f"High ELA compression variance (score={score:.4f})")
+    return {"ela_score": score, "flags": flags}
+
+def inspect_exif_editing_software(exif_dict: Dict[str, Any]) -> Dict[str, Any]:
+    score, reason = compute_metadata_score(exif_dict)
+    flags = []
+    if score > 0.50:
+        flags.append(f"Editing software signature ({reason})")
+    return {"metadata_score": score, "reason": reason, "flags": flags}
+
+def compute_block_noise_inconsistency(image_bgr: np.ndarray) -> float:
+    return compute_noise_inconsistency(image_bgr)
+

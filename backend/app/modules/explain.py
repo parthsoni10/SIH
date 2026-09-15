@@ -11,16 +11,27 @@ def generate_template_explanation(
     tampering_score: float,
     face_match_score: Optional[float],
     blacklist_hit: bool,
-    document_type: str
+    document_type: str,
+    synthetic_generation_score: float = 0.0,
+    synthetic_reasons: Optional[List[str]] = None,
 ) -> str:
     """
     Local plain-language explanation generator.
-    Used as fallback when the unified LLM call is unavailable or returns no explanation.
+    Used as fallback when the unified LLM call is unavailable (offline mode) or returns no explanation.
     """
+    pred_upper = (prediction or "").upper()
+
+    if pred_upper == "INCOMPLETE_SUBMISSION":
+        return f"Incomplete Submission ({risk_score}% risk): Physical document not fully presented. Upload required secondary side (e.g. back side) to complete screening."
+
     reasons = []
 
     if blacklist_hit:
         reasons.append("Document ID matches known watch-list / blacklist record")
+
+    if synthetic_generation_score >= 0.5:
+        details = f" ({', '.join(synthetic_reasons)})" if synthetic_reasons else ""
+        reasons.append(f"document shows strong signs of being AI-generated rather than a physical photo{details}")
 
     if "invalid_id_checksum" in failed_rules or "mrz_checksum_mismatch" in failed_rules:
         reasons.append("checksum verification failed on document ID/MRZ")
@@ -37,9 +48,13 @@ def generate_template_explanation(
     if not reasons and failed_rules:
         reasons.append(f"failed validation rules: {', '.join(failed_rules)}")
 
-    if prediction == "fraudulent" or risk_score >= 50:
+    if pred_upper in ["AI_GENERATED", "ALTERED", "AI_GENERATED_AND_ALTERED", "SUSPICIOUS", "FRAUDULENT"] or risk_score >= 70:
         if reasons:
             return f"Flagged ({risk_score}% risk): {'; '.join(reasons)}."
         return f"Flagged ({risk_score}% risk): Elevated anomaly index across document signals."
+    elif pred_upper == "MANUAL_REVIEW" or risk_score >= 30:
+        if reasons:
+            return f"Manual Review Required ({risk_score}% risk): {'; '.join(reasons)}."
+        return f"Manual Review Required ({risk_score}% risk): Uncalibrated model signals or unread fields require officer verification."
     else:
-        return f"Verified ({risk_score}% risk): All document security checks, checksums, and structural rules passed."
+        return f"Verified authentic {document_type} ({risk_score}% risk): All document security checks, checksums, and structural rules passed."

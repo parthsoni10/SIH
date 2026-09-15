@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { History, Search, RefreshCw, Eye, ShieldAlert, CheckCircle2, Filter } from 'lucide-react';
-import { fetchAuditTrail } from '../services/api';
+import { History, Search, RefreshCw, Eye, ShieldAlert, CheckCircle2, Filter, Loader2 } from 'lucide-react';
+import { fetchAuditTrail, fetchAuditRecord } from '../services/api';
 import ResultPage from './ResultPage';
 
 export default function AuditTrailPage() {
@@ -8,6 +8,7 @@ export default function AuditTrailPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [loadingRecordId, setLoadingRecordId] = useState(null);
   const [filterDocType, setFilterDocType] = useState('');
   const [filterPrediction, setFilterPrediction] = useState('');
   const [filterRiskTier, setFilterRiskTier] = useState('');
@@ -30,6 +31,45 @@ export default function AuditTrailPage() {
   useEffect(() => {
     loadTrail();
   }, [page, filterDocType, filterPrediction, filterRiskTier]);
+
+  const handleViewRecord = async (row) => {
+    setLoadingRecordId(row.id);
+    try {
+      const fullRecord = await fetchAuditRecord(row.id);
+      setSelectedRecord(fullRecord);
+    } catch (err) {
+      console.error('Failed to load full audit record details:', err);
+      setSelectedRecord(row);
+    } finally {
+      setLoadingRecordId(null);
+    }
+  };
+
+  const renderStatusBadge = (prediction) => {
+    const p = (prediction || '').toUpperCase();
+    if (p === 'GENUINE') {
+      return <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold">GENUINE</span>;
+    }
+    if (p === 'AI_GENERATED') {
+      return <span className="px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 text-[10px] font-bold">AI GENERATED</span>;
+    }
+    if (p === 'ALTERED') {
+      return <span className="px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-bold">ALTERED</span>;
+    }
+    if (p === 'AI_GENERATED_AND_ALTERED') {
+      return <span className="px-2.5 py-1 rounded-full bg-rose-600/30 text-rose-200 border border-rose-600/50 text-[10px] font-bold">AI + ALTERED</span>;
+    }
+    if (p === 'SUSPICIOUS') {
+      return <span className="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-bold">SUSPICIOUS</span>;
+    }
+    if (p === 'MANUAL_REVIEW') {
+      return <span className="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-bold">MANUAL REVIEW</span>;
+    }
+    if (p === 'INCOMPLETE_SUBMISSION') {
+      return <span className="px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/40 text-[10px] font-bold">INCOMPLETE</span>;
+    }
+    return <span className="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700 text-[10px] font-bold">{p}</span>;
+  };
 
   if (selectedRecord) {
     return (
@@ -84,6 +124,7 @@ export default function AuditTrailPage() {
             <option value="Aadhaar">Aadhaar</option>
             <option value="PAN Card">PAN Card</option>
             <option value="Driving License">Driving License</option>
+            <option value="Other">Other</option>
           </select>
 
           {/* Filter Prediction */}
@@ -92,9 +133,13 @@ export default function AuditTrailPage() {
             onChange={(e) => { setFilterPrediction(e.target.value); setPage(1); }}
             className="bg-slate-900 border border-slate-800 text-slate-300 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-cyan-500"
           >
-            <option value="">All Predictions</option>
-            <option value="genuine">Genuine Only</option>
-            <option value="fraudulent">Fraudulent Only</option>
+            <option value="">All Prediction Statuses</option>
+            <option value="GENUINE">Genuine</option>
+            <option value="AI_GENERATED">AI Generated</option>
+            <option value="ALTERED">Altered</option>
+            <option value="SUSPICIOUS">Suspicious</option>
+            <option value="MANUAL_REVIEW">Manual Review</option>
+            <option value="INCOMPLETE_SUBMISSION">Incomplete Submission</option>
           </select>
 
           {/* Filter Risk Tier */}
@@ -121,7 +166,7 @@ export default function AuditTrailPage() {
                 <th className="py-3 px-4">Timestamp</th>
                 <th className="py-3 px-4">Document Type</th>
                 <th className="py-3 px-4">Filename</th>
-                <th className="py-3 px-4 text-center">Risk Score</th>
+                <th className="py-3 px-4 text-center">Risk & Confidence</th>
                 <th className="py-3 px-4">Prediction</th>
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
@@ -136,7 +181,8 @@ export default function AuditTrailPage() {
                 </tr>
               ) : (
                 logs.map((row) => {
-                  const isFraud = row.prediction === 'fraudulent' || row.risk_score >= 50;
+                  const isHighRisk = row.risk_score >= 50;
+                  const confPct = row.decision_confidence != null ? Math.round(row.decision_confidence * 100) : null;
 
                   return (
                     <tr key={row.id} className="hover:bg-slate-800/40 transition-all">
@@ -151,21 +197,31 @@ export default function AuditTrailPage() {
                         {row.filename || 'N/A'}
                       </td>
                       <td className="py-3.5 px-4 text-center font-bold">
-                        <span className={`px-2.5 py-1 rounded-full ${isFraud ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}`}>
-                          {row.risk_score} / 100
-                        </span>
+                        <div className="flex flex-col items-center">
+                          <span className={`px-2.5 py-1 rounded-full ${isHighRisk ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}`}>
+                            Risk: {row.risk_score} / 100
+                          </span>
+                          {confPct !== null && (
+                            <span className="text-[10px] text-cyan-400 font-mono mt-1 font-semibold">
+                              {confPct}% Confidence
+                            </span>
+                          )}
+                        </div>
                       </td>
-                      <td className="py-3.5 px-4 uppercase font-bold text-xs">
-                        <span className={isFraud ? 'text-rose-400' : 'text-emerald-400'}>
-                          {row.prediction}
-                        </span>
+                      <td className="py-3.5 px-4">
+                        {renderStatusBadge(row.prediction)}
                       </td>
                       <td className="py-3.5 px-4 text-right">
                         <button
-                          onClick={() => setSelectedRecord(row)}
+                          onClick={() => handleViewRecord(row)}
+                          disabled={loadingRecordId === row.id}
                           className="px-3 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-semibold transition-all inline-flex items-center space-x-1"
                         >
-                          <Eye className="w-3.5 h-3.5" />
+                          {loadingRecordId === row.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Eye className="w-3.5 h-3.5" />
+                          )}
                           <span>View Detail</span>
                         </button>
                       </td>

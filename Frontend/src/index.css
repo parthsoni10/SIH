@@ -37,3 +37,91 @@
 .glow-cyan {
   box-shadow: 0 0 25px -5px rgba(6, 182, 212, 0.3);
 }
+
+@keyframes scanline {
+  0% { top: 0%; opacity: 0.9; }
+  50% { top: 95%; opacity: 1; }
+  100% { top: 0%; opacity: 0.9; }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.5; box-shadow: 0 0 10px rgba(6, 182, 212, 0.2); }
+  50% { opacity: 1; box-shadow: 0 0 25px rgba(6, 182, 212, 0.6); }
+}
+
+.animate-scanline {
+  animation: scanline 2.2s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 1.8s infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2s infinite;
+}
+
+/* Pipeline full-screen overlay — covers everything including sticky nav */
+.pipeline-overlay {
+  position: fixed;
+  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  z-index: 99999;
+  overflow: hidden;
+  background: #020617; /* slate-950 solid */
+}
+
+/* Subtle dot pattern background */
+.pipeline-dots {
+  background-image: radial-gradient(circle, rgba(6,182,212,0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Rotating ring for SVG progress */
+@keyframes rotate-ring {
+  0% { transform: rotate(-90deg); }
+  100% { transform: rotate(270deg); }
+}
+
+@keyframes border-glow {
+  0%, 100% { border-color: rgba(6,182,212,0.25); }
+  50% { border-color: rgba(6,182,212,0.6); }
+}
+
+@keyframes float-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-float-in {
+  animation: float-in 0.4s ease-out forwards;
+}
+
+.animate-border-glow {
+  animation: border-glow 2.5s ease-in-out infinite;
+}
+
+/* Cyber Terminal Scrollbar */
+.terminal-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.terminal-scroll::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+}
+.terminal-scroll::-webkit-scrollbar-thumb {
+  background: rgba(51, 65, 85, 0.8);
+  border-radius: 4px;
+}
+.terminal-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(6, 182, 212, 0.6);
+}
+

@@ -5,7 +5,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.db.database import engine, Base
 from app.routers import documents, audit
-from app.modules.risk_scoring import self_test_model
 from app.modules.ocr import get_ocr_engine
 from app.modules.face_match import warmup_deepface_model
 
@@ -23,22 +22,53 @@ async def lifespan(app: FastAPI):
             from sqlalchemy import text
             result = conn.execute(text("PRAGMA table_info(audit_logs);")).fetchall()
             column_names = [row[1] for row in result] if result else []
-            if "layout_score" not in column_names:
-                conn.execute(text("ALTER TABLE audit_logs ADD COLUMN layout_score FLOAT;"))
-            if "layout_anomalies" not in column_names:
-                conn.execute(text("ALTER TABLE audit_logs ADD COLUMN layout_anomalies JSON;"))
-            if "face_match_missing" not in column_names:
-                conn.execute(text("ALTER TABLE audit_logs ADD COLUMN face_match_missing BOOLEAN;"))
+
+            new_cols = [
+                ("layout_score", "FLOAT"),
+                ("layout_anomalies", "JSON"),
+                ("face_match_missing", "BOOLEAN"),
+                ("synthetic_generation_score", "FLOAT"),
+                ("synthetic_reasons", "JSON"),
+                ("ai_probability", "FLOAT"),
+                ("ai_model_version", "VARCHAR(50)"),
+                ("frequency_score", "FLOAT"),
+                ("synthetic_noise_score", "FLOAT"),
+                ("synthetic_confidence", "FLOAT"),
+                ("strong_signal_count", "INTEGER"),
+                ("synthetic_status", "VARCHAR(50)"),
+                ("decision_reason_codes", "JSON"),
+                ("synthetic_analysis", "JSON"),
+                ("decision_status", "VARCHAR(50)"),
+                ("decision_confidence", "FLOAT"),
+                ("document_validity_score", "FLOAT"),
+                ("ai_generation_probability", "FLOAT"),
+                ("tampering_probability", "FLOAT"),
+                ("frequency_anomaly", "FLOAT"),
+                ("noise_anomaly", "FLOAT"),
+                ("patch_ai_probability", "FLOAT"),
+                ("corroborated", "BOOLEAN"),
+                ("quality_score", "FLOAT"),
+                ("gemini_summary", "TEXT"),
+                ("reason_codes", "JSON"),
+                ("model_versions", "JSON"),
+                ("full_forensic_json", "JSON"),
+            ]
+
+            for col_name, col_type in new_cols:
+                if col_name not in column_names:
+                    conn.execute(text(f"ALTER TABLE audit_logs ADD COLUMN {col_name} {col_type};"))
             conn.commit()
+
     except Exception as e:
         logger.warning(f"Auto-migration notice: {str(e)}")
 
-    logger.info("Running risk model self-test...")
-    model_ok = self_test_model()
-    if not model_ok:
-        logger.warning("Risk model self-test returned unexpected values!")
-    else:
-        logger.info("Risk model self-test passed.")
+    logger.info("Pre-loading EfficientNet-B0 AI Detector & Forensic Engines...")
+    try:
+        from app.modules.ai_image_detector import AIDetectorService
+        AIDetectorService.get_instance()
+        logger.info("AI Detector Service loaded successfully at startup.")
+    except Exception as e:
+        logger.warning(f"AI Detector startup pre-loading warning: {str(e)}")
 
     logger.info("Pre-warming OCR engine & DeepFace models...")
     try:
@@ -49,13 +79,12 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    # App Shutdown
     logger.info("Shutting down AI Screening Pipeline backend.")
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    version="1.0.0",
-    description="AI-Based Fake Identity & Document Screening System — FastAPI Backend",
+    version="2.0.0",
+    description="AI-Based Fake Identity & Document Screening System — FastAPI Backend (V2 Target Architecture)",
     lifespan=lifespan
 )
 
@@ -78,7 +107,7 @@ def health_check():
     return {
         "status": "healthy",
         "system": settings.PROJECT_NAME,
-        "version": "1.0.0",
+        "version": "2.0.0",
         "endpoints": [
             "/api/documents/verify",
             "/api/audit",

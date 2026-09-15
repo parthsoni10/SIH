@@ -1,0 +1,39 @@
+{
+  "evaluation_samples": 500,
+  "risk_model_v1": {
+    "accuracy": 0.94,
+    "precision": 0.8655,
+    "recall": 1.0,
+    "f1": 0.9279,
+    "roc_auc": 0.9996,
+    "fpr": 0.0977,
+    "fnr": 0.0,
+    "confusion_matrix": {
+      "tn": 277,
+      "fp": 30,
+      "fn": 0,
+      "tp": 193
+    }
+  },
+  "risk_model_v2": {
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "roc_auc": 1.0,
+    "fpr": 0.0,
+    "fnr": 0.0,
+    "confusion_matrix": {
+      "tn": 307,
+      "fp": 0,
+      "fn": 0,
+      "tp": 193
+    }
+  },
+  "delta": {
+    "accuracy_improvement": 0.06,
+    "f1_improvement": 0.0721,
+    "roc_auc_improvement": 0.0004,
+    "fpr_reduction": 0.0977
+  }
+}

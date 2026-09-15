@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { ArrowRight, ShieldCheck, Loader2, FileText, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Loader2 } from 'lucide-react';
 import DocumentUploader from '../components/DocumentUploader';
 import CameraWidget from '../components/CameraWidget';
+import PipelineProgressModal from '../components/PipelineProgressModal';
 import { verifyDocument } from '../services/api';
 
 const DOCUMENT_TYPES = [
@@ -12,23 +13,14 @@ const DOCUMENT_TYPES = [
   { id: 'Driving License', label: 'Driving License' },
 ];
 
-const PROCESSING_STAGES = [
-  'Pre-processing & image normalization...',
-  'Running PaddleOCR & MRZ checksum extraction...',
-  'Validating document rules & blacklist database...',
-  'Analyzing ELA & image tampering forensics...',
-  'Computing live face match similarity...',
-  'Evaluating 12-feature Random Forest risk model...',
-  'Generating Gemini AI officer summary...'
-];
-
 export default function UploadPage({ onVerificationComplete }) {
   const [selectedFile, setSelectedFile] = useState(null);
+  const [backSideFile, setBackSideFile] = useState(null);
   const [liveBlob, setLiveBlob] = useState(null);
   const [documentType, setDocumentType] = useState('Passport');
   
   const [isProcessing, setIsProcessing] = useState(false);
-  const [currentStageIdx, setCurrentStageIdx] = useState(0);
+  const [isScanDone, setIsScanDone] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
   const handleSubmit = async (e) => {
@@ -40,24 +32,24 @@ export default function UploadPage({ onVerificationComplete }) {
 
     setErrorMsg(null);
     setIsProcessing(true);
-    setCurrentStageIdx(0);
-
-    // Simulate stage progress timer
-    const interval = setInterval(() => {
-      setCurrentStageIdx((prev) => {
-        if (prev < PROCESSING_STAGES.length - 1) return prev + 1;
-        return prev;
-      });
-    }, 450);
+    setIsScanDone(false);
 
     try {
-      const resultData = await verifyDocument(selectedFile, liveBlob, documentType);
-      clearInterval(interval);
-      setIsProcessing(false);
-      onVerificationComplete(resultData);
+      const resultData = await verifyDocument(selectedFile, backSideFile, liveBlob, documentType);
+      
+      // Mark scan as complete so modal fast-forwards to 100%
+      setIsScanDone(true);
+
+      // Brief delay to allow completion animation before transitioning
+      setTimeout(() => {
+        setIsProcessing(false);
+        setIsScanDone(false);
+        onVerificationComplete(resultData);
+      }, 700);
+
     } catch (err) {
-      clearInterval(interval);
       setIsProcessing(false);
+      setIsScanDone(false);
       
       let errorMessage;
       if (err.code === 'ECONNABORTED') {
@@ -115,6 +107,8 @@ export default function UploadPage({ onVerificationComplete }) {
           <DocumentUploader
             selectedFile={selectedFile}
             setSelectedFile={setSelectedFile}
+            backSideFile={backSideFile}
+            setBackSideFile={setBackSideFile}
           />
 
           <CameraWidget
@@ -158,31 +152,13 @@ export default function UploadPage({ onVerificationComplete }) {
         </div>
       </form>
 
-      {/* Stage Loading Overlay Modal */}
-      {isProcessing && (
-        <div className="fixed inset-0 z-50 glass-panel bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="glass-card max-w-md w-full p-8 rounded-3xl border border-slate-800 text-center space-y-6 shadow-2xl">
-            <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center mx-auto text-cyan-400">
-              <Loader2 className="w-8 h-8 animate-spin" />
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="text-xl font-bold text-white">Screening Pipeline Running</h3>
-              <p className="text-xs font-mono text-cyan-400 h-6">
-                {PROCESSING_STAGES[currentStageIdx]}
-              </p>
-            </div>
-
-            {/* Stage Progress Bar */}
-            <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-              <div
-                className="bg-gradient-to-r from-cyan-500 to-blue-500 h-full transition-all duration-300"
-                style={{ width: `${((currentStageIdx + 1) / PROCESSING_STAGES.length) * 100}%` }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Interactive Live Pipeline Progress Modal */}
+      <PipelineProgressModal
+        isOpen={isProcessing}
+        file={selectedFile}
+        documentType={documentType}
+        isDone={isScanDone}
+      />
     </div>
   );
 }

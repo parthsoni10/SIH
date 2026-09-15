@@ -89,7 +89,6 @@ def detect_and_crop_face(
 
     img_h, img_w = image_bgr.shape[:2]
 
-    # Primary: YuNet DNN Detector
     yunet_faces = detect_face_yunet(image_bgr, custom_model_path=custom_yunet_path)
     if yunet_faces:
         yunet_faces.sort(key=lambda f: f["bbox"][2] * f["bbox"][3], reverse=True)
@@ -105,7 +104,6 @@ def detect_and_crop_face(
         crop = image_bgr[y1:y2, x1:x2]
         return (True, crop, "yunet") if return_detector else (True, crop)
 
-    # Fallback: Haar Cascade
     cascade = get_face_cascade()
     if cascade is not None and not getattr(cascade, 'empty', lambda: True)():
         try:
@@ -166,15 +164,6 @@ def crop_photo_by_doc_layout(image_bgr: np.ndarray, document_type: str) -> Optio
     except Exception:
         return None
 
-def warmup_deepface_model():
-    """Pre-warms DeepFace Facenet model weights during FastAPI app startup."""
-    if HAS_DEEPFACE:
-        try:
-            dummy_img = np.zeros((128, 128, 3), dtype=np.uint8)
-            DeepFace.represent(img_path=dummy_img, model_name="Facenet", enforce_detection=False)
-        except Exception:
-            pass
-
 def verify_face_match(
     doc_image_bgr: np.ndarray,
     live_capture_bytes: Optional[bytes],
@@ -183,11 +172,14 @@ def verify_face_match(
 ) -> Dict[str, Any]:
     """
     Compares face extracted from document image against live capture image.
-    Uses OpenCV YuNet DNN as primary detector and Haar Cascade as fallback.
-    Returns face_match_score, face_detected_in_doc, face_detected_live, detector_used_doc, detector_used_live.
+    When live capture photo is omitted, score is set to null (available=False, status='NOT_PROVIDED').
+    CRITICAL: Never default missing face match to 0.93.
     """
     if not live_capture_bytes:
         return {
+            "available": False,
+            "score": None,
+            "status": "NOT_PROVIDED",
             "face_match_score": None,
             "face_detected_in_doc": False,
             "face_detected_live": False,
@@ -196,7 +188,6 @@ def verify_face_match(
             "distance": None
         }
 
-    # Decode live capture bytes
     try:
         nparr = np.frombuffer(live_capture_bytes, np.uint8)
         live_bgr = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -204,6 +195,9 @@ def verify_face_match(
             raise ValueError()
     except Exception:
         return {
+            "available": False,
+            "score": None,
+            "status": "INVALID_CAPTURE_FILE",
             "face_match_score": None,
             "face_detected_in_doc": False,
             "face_detected_live": False,
@@ -212,7 +206,6 @@ def verify_face_match(
             "distance": None
         }
 
-    # Attempt detection on layout-cropped photo region first
     layout_crop = crop_photo_by_doc_layout(doc_image_bgr, document_type)
     doc_face_found, doc_crop, detector_used_doc = detect_and_crop_face(
         layout_crop if layout_crop is not None else doc_image_bgr,
@@ -221,7 +214,6 @@ def verify_face_match(
     )
     
     if not doc_face_found and layout_crop is not None:
-        # Fallback to full document image
         doc_face_found, doc_crop, detector_used_doc = detect_and_crop_face(
             doc_image_bgr,
             custom_yunet_path=custom_yunet_path,
@@ -256,7 +248,12 @@ def verify_face_match(
     else:
         similarity = compute_histogram_similarity(doc_target, live_target)
 
+    status_str = "MATCHED" if similarity >= 0.70 else "MISMATCHED"
+
     return {
+        "available": True,
+        "score": similarity,
+        "status": status_str,
         "face_match_score": similarity,
         "face_detected_in_doc": doc_face_found,
         "face_detected_live": live_face_found,
@@ -264,3 +261,13 @@ def verify_face_match(
         "detector_used_live": detector_used_live,
         "distance": distance
     }
+
+def warmup_deepface_model():
+    """Pre-warms DeepFace model weights if installed."""
+    if HAS_DEEPFACE:
+        try:
+            dummy = np.zeros((100, 100, 3), dtype=np.uint8)
+            DeepFace.verify(img1_path=dummy, img2_path=dummy, model_name="Facenet", enforce_detection=False)
+        except Exception:
+            pass
+

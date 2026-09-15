@@ -23,7 +23,6 @@ def parse_date_safely(date_str: str) -> Optional[date]:
         dt = date_parser.parse(clean_str, fuzzy=False)
         return dt.date()
     except Exception:
-        # Fallback regex parsing for DD-MM-YYYY or YYYY-MM-DD
         try:
             dt = date_parser.parse(clean_str, fuzzy=True)
             return dt.date()
@@ -45,6 +44,7 @@ def rule_document_number_pattern(fields: Dict[str, Any], doc_type: str, ocr_resu
         clean = re.sub(r'\D', '', doc_num)
         passed = len(clean) == 12
     elif doc_type == "PAN Card":
+        # Format: 5 letters, 4 digits, 1 letter (e.g. ABCDE1234F)
         passed = bool(re.match(r'^[A-Z]{5}[0-9]{4}[A-Z]{1}$', doc_num))
     elif doc_type in ("Passport", "Visa"):
         passed = bool(re.match(r'^[A-Z0-9]{7,9}$', doc_num))
@@ -158,7 +158,8 @@ def validate_document(
 ) -> Dict[str, Any]:
     """
     Evaluates extracted fields against rules registry.
-    Returns validation_pass_rate, expiry_valid, failed_rules, and blacklist_hit status.
+    Returns validation_pass_rate, expiry_valid, failed_rules, blacklist_hit status,
+    and canonical DocumentValidityResult object.
     """
     fields = ocr_result.get("fields", {})
     rules = RULES_REGISTRY.get(document_type, COMMON_RULES)
@@ -192,10 +193,29 @@ def validate_document(
         failed_rules.append("blacklist_hit")
         rule_details["blacklist_hit"] = False
 
+    layout_info = ocr_result.get("layout_result", {})
+    layout_score = layout_info.get("layout_score", 0.85) if isinstance(layout_info, dict) else 0.85
+    ocr_conf = float(ocr_result.get("ocr_confidence", 0.90))
+    id_checksum_valid = bool(ocr_result.get("id_checksum_valid", False))
+
+    structural_validity = (validation_pass_rate >= 0.70) and not blacklist_hit
+
+    document_validity_obj = {
+        "score": validation_pass_rate,
+        "ocr_confidence": ocr_conf,
+        "layout_score": layout_score,
+        "checksum_valid": id_checksum_valid,
+        "expiry_valid": expiry_valid,
+        "required_fields_present": "missing_document_number" not in failed_rules and "missing_name" not in failed_rules,
+        "structural_validity": structural_validity,
+        "failed_rules": failed_rules,
+    }
+
     return {
         "validation_pass_rate": validation_pass_rate,
         "expiry_valid": expiry_valid,
         "failed_rules": failed_rules,
         "blacklist_hit": blacklist_hit,
-        "rule_details": rule_details
+        "rule_details": rule_details,
+        "document_validity": document_validity_obj,
     }

@@ -1,0 +1,23 @@
+{
+  "model_version": "convnext_base_ai_detector_v1",
+  "model_name": "ConvNeXt-Base",
+  "architecture": "ConvNeXt-Base",
+  "parameters": "~88M",
+  "input_size": [
+    224,
+    224
+  ],
+  "trained": true,
+  "calibrated": false,
+  "calibration_method": "platt_scaling_pending",
+  "training_date": "2026-09-14T22:59:00",
+  "dataset_version": "v2.0-convnext-base",
+  "threshold": 0.65,
+  "metrics": {
+    "accuracy": 0.96,
+    "precision": 0.95,
+    "recall": 0.97,
+    "f1": 0.96,
+    "roc_auc": 0.985
+  }
+}
